@@ -1,0 +1,5 @@
+(* OASIS_START *)
+(* DO NOT EDIT (digest: d1f69135263eb082640a2b1c6e28c870) *)
+Authors of asig
+mzp
+(* OASIS_STOP *)

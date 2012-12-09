@@ -1,0 +1,11 @@
+# OASIS_START
+# DO NOT EDIT (digest: 3f4fc761b887c1f581755329e39e9700)
+version = "0.1.0"
+description = "as"
+archive(byte) = "asig.cma"
+archive(byte, plugin) = "asig.cma"
+archive(native) = "asig.cmxa"
+archive(native, plugin) = "asig.cmxs"
+exists_if = "asig.cma"
+# OASIS_STOP
+

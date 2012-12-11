@@ -6,15 +6,18 @@ Authors:     mzp
 License:     MIT
 Plugins:     META (0.3),StdFiles (0.3), DevFiles (0.3)
 
-BuildTools: ocamlbuild
+BuildTools: ocamlbuild, camlp4
 
 Library asig
   Pack:    true
   Path:    lib
-  Modules: Version
+  Modules: Version, AsakusaSatellite, Http, Base
   CompiledObject: best
-  ByteOpt: -w +a -warn-error +a
-  NativeOpt: -w +a -warn-error +a
+  ByteOpt: -w +a -warn-error +a -annot
+  NativeOpt: -w +a -warn-error +a -annot
+  BuildDepends: camlp4,
+                tiny_json_conv, meta_conv.syntax,
+                cohttp.lwt, lwt.unix
 
 Executable main
   Path: src

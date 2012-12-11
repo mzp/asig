@@ -10,7 +10,8 @@ src/oasis/OASISConf.ml
 bindist
 patches-to-apply
 tarballs
-_tags
 configure
 myocamlbuild.ml
 setup.ml
+INSTALL.txt
+*.bak

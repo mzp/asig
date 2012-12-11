@@ -1,7 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: 3f4fc761b887c1f581755329e39e9700)
+# DO NOT EDIT (digest: d9ef68d58694826aa9fe99ad631545d5)
 version = "0.1.0"
 description = "as"
+requires = "camlp4 tiny_json_conv meta_conv.syntax cohttp.lwt lwt.unix"
 archive(byte) = "asig.cma"
 archive(byte, plugin) = "asig.cma"
 archive(native) = "asig.cmxa"

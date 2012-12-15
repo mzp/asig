@@ -7,8 +7,8 @@ type t = {
   entry_point : string
 }
 
-type 'a result =
-    ('a, Tiny_json.Json.t) Meta_conv.Types.Result.t
+type 'a result = ('a, string) Either.t
+
 
 (* json for room *)
 type room (: Ignore_unknown_fields :) = {
@@ -30,7 +30,8 @@ type message (: Ignore_unknown_fields :) = {
 type messages = message list with conv(json)
 
 module type S = sig
-  val get : string -> string
+  val get : string -> (string, string) Either.t
+  val post : string -> (string * string) list -> (string, string) Either.t
 end
 
 module Make(Http : S) = struct
@@ -60,15 +61,35 @@ module Make(Http : S) = struct
     Printf.sprintf "%s/api/v1/%s.json%s" entry_point path params
 
   let http_get url =
-    Json.parse (Http.get url)
+    Http.get url
+    +> Either.fmap (fun s -> Json.parse s)
+
+  let lift f x =
+    match f x with
+      | `Ok x -> `Ok x
+      | `Error _ -> `Error "conversion error"
 
   let rooms t =
+    let open Either in
     api t "room/list" []
     +> http_get
-    +> rooms_of_json
+    >>= lift rooms_of_json
 
   let messages room_id t =
+    let open Either in
     api t "message/list" ["room_id", room_id]
     +> http_get
-    +> messages_of_json
+    >>= lift messages_of_json
+
+  let post room_id message t =
+    let open Either in
+    let url =
+      api { t with api_key = None } "message" []
+    in
+    Http.post url @@ [
+      "room_id", room_id;
+      "message", message;
+      "api_key", BatOption.get t.api_key
+    ]
+    >>= const (`Ok ())
 end

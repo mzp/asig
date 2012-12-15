@@ -9,9 +9,17 @@ module Stub = struct
   let url =
     ref ""
 
+  let params =
+    ref ([] : (string * string) list)
+
   let get u =
     url := u;
-    !response
+    `Ok !response
+
+  let post u p =
+    params := p;
+    url := u;
+    `Ok !response
 end
 
 module As = Asig.AsakusaSatellite.Make(Stub)
@@ -29,7 +37,7 @@ let success = function
 
 let assert_error = function
   | `Ok _ -> assert false
-  | `Error json -> assert true
+  | `Error _ -> assert true
 
 let tests = "AsakusaSatellite" >::: [
   "rooms" >:: begin fun () ->
@@ -64,5 +72,14 @@ let tests = "AsakusaSatellite" >::: [
       }
     }] @@ success @@ messages "room_id" api;
     assert_equal "http://example.com//api/v1/message/list.json?room_id=room_id" !Stub.url
+  end;
+  "message post" >:: begin fun () ->
+    ignore @@ post "room_id" "hi" auth_api;
+    assert_equal "http://example.com//api/v1/message.json" !Stub.url;
+    assert_equal [
+      "room_id", "room_id";
+      "message", "hi";
+      "api_key", "hoge"
+    ] !Stub.params
   end
 ]

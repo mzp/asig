@@ -1,5 +1,5 @@
 type t
-type 'a result = ('a, Tiny_json.Json.t) Meta_conv.Types.Result.t
+type 'a result = ('a, string) Either.t
 
 type room = {
   room_id : string;
@@ -15,11 +15,13 @@ type message = {
 }
 
 module type S = sig
-  val get : string -> string
+  val get : string -> string result
+  val post : string -> (string * string) list -> string result
 end
 
 module Make : functor (Http : S) -> sig
   val init  : ?api_key:string -> string -> t
   val rooms : t -> room list result
   val messages : string -> t -> message list result
+  val post  : string -> string -> t -> unit result
 end

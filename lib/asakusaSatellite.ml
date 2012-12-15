@@ -15,19 +15,25 @@ type rooms = room list with conv(json)
 
 module Make(Http : S) = struct
   type t = {
+    api_key : string option;
     entry_point : string
   }
 
-  let init entry_point = {
+  let init ?api_key entry_point = {
+    api_key;
     entry_point
   }
 
-  let api { entry_point } path =
-    Printf.sprintf "%s/api/v1/%s.json" entry_point path
+  let api { entry_point; api_key  } path =
+    let params =
+      match api_key with
+        | Some s -> Printf.sprintf "?api_key=%s" s
+        | None   -> "" in
+    Printf.sprintf "%s/api/v1/%s.json%s" entry_point path params
 
   let rooms t =
     api t "room/list"
     +> Http.get
     +> Json.parse
-    +> rooms_of_json_exn
+    +> rooms_of_json
 end

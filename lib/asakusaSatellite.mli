@@ -10,6 +10,6 @@ type room = {
 module Make : functor (Http : S) -> sig
   type t
 
-  val init  : string -> t
-  val rooms : t -> room list
+  val init  : ?api_key:string -> string -> t
+  val rooms : t -> (room list, Tiny_json.Json.t) Meta_conv.Types.Result.t
 end

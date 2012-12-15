@@ -17,7 +17,8 @@ Library asig
   NativeOpt: -w +a -warn-error +a -annot
   BuildDepends: camlp4,
                 tiny_json_conv, meta_conv.syntax,
-                cohttp.lwt, lwt.unix
+                cohttp.lwt, lwt.unix,
+                batteries
 
 Executable main
   Path: src

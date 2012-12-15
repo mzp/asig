@@ -50,4 +50,19 @@ let tests = "AsakusaSatellite" >::: [
     assert_equal [] @@ success @@ rooms auth_api;
     assert_equal "http://example.com//api/v1/room/list.json?api_key=hoge" !Stub.url
   end;
+  "message list" >:: begin fun () ->
+    Stub.response :=
+      "[{ \"id\" : \"123\", \"body\":\"foo\", \"name\" : \"alice\", \"screen_name\" : \"Alice\", \"room\" : { \"id\" : \"123\", \"name\" : \"room\"}}]";
+    assert_equal [{
+      message_id = "123";
+      body       = "foo";
+      name       = "alice";
+      screen_name = "Alice";
+      room = {
+        room_id = "123";
+        room_name = "room"
+      }
+    }] @@ success @@ messages "room_id" api;
+    assert_equal "http://example.com//api/v1/message/list.json?room_id=room_id" !Stub.url
+  end
 ]

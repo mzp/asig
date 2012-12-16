@@ -14,9 +14,14 @@ type message = {
   room : room
 }
 
+type socket_io_event = [
+  `Connection
+| `Json of Tiny_json.Json.t ]
+
 module type S = sig
-  val get : string -> string result
-  val post : string -> (string * string) list -> string result
+  val get       : string -> (string, string) Either.t
+  val post      : string -> (string * string) list -> (string, string) Either.t
+  val socket_io : f:((string -> unit) -> socket_io_event -> unit) -> string -> unit result
 end
 
 module Make : functor (Http : S) -> sig
@@ -24,4 +29,5 @@ module Make : functor (Http : S) -> sig
   val rooms : t -> room list result
   val messages : string -> t -> message list result
   val post  : string -> string -> t -> unit result
+  val on_message : (message -> unit) -> string -> unit result
 end

@@ -11,3 +11,5 @@ let (>>=) = bind
 let fmap f t = match t with
   | `Ok v -> `Ok (f v)
   | `Error err -> `Error err
+
+let return x = `Ok x

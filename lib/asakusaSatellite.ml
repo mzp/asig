@@ -29,9 +29,24 @@ type message (: Ignore_unknown_fields :) = {
 
 type messages = message list with conv(json)
 
+(* socket io event *)
+type content = {
+  content : message
+} with conv(json)
+
+type event = {
+  event_name as "name" : string;
+  args : string list
+} with conv(json)
+
+type socket_io_event = [
+  `Connection
+| `Json of Tiny_json.Json.t ]
+
 module type S = sig
-  val get : string -> (string, string) Either.t
-  val post : string -> (string * string) list -> (string, string) Either.t
+  val get       : string -> (string, string) Either.t
+  val post      : string -> (string * string) list -> (string, string) Either.t
+  val socket_io : f:((string -> unit) -> socket_io_event -> unit) -> string -> unit result
 end
 
 module Make(Http : S) = struct
@@ -92,4 +107,31 @@ module Make(Http : S) = struct
       "api_key", BatOption.get t.api_key
     ]
     >>= const (`Ok ())
+
+  let on_message f url =
+    Http.socket_io url ~f:begin fun send -> function
+      | `Connection ->
+        let json =
+          JsonUtil.string_of_json @@ json_of_event { event_name = "subscribe"; args = [
+            "as-50d07248489e0117e6000003"
+          ]}
+        in
+        print_endline json;
+        send ("5:::"^json)
+(* { \"name\":\"subscribe\", \"args\":[\"as-50d07248489e0117e6000003\"]}"*)
+      | `Json json ->
+        let open Either in
+        let _ =
+          event_of_json json
+          >>= function
+            | { event_name = "message_create"; args=[_; json] } ->
+              Json.parse json
+              +> lift content_of_json
+              +> Either.fmap (fun { content; _ } -> f content)
+              +> Either.return
+            | _ ->
+              Either.return (`Error "unknown event")
+        in
+        ()
+    end
 end

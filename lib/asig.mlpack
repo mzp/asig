@@ -1,8 +1,9 @@
 # OASIS_START
-# DO NOT EDIT (digest: 2d31ca93e32a70dd54b262f4e5755ded)
+# DO NOT EDIT (digest: 9295acc31d949c383b7a047473e4a751)
 Version
 AsakusaSatellite
 Http
 Base
 WebSocket
+JsonUtil
 # OASIS_STOP

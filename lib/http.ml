@@ -26,3 +26,43 @@ let post url params =
   in
   (Client.post_form ~params Uri.(of_string url) >>= response)
   +> Lwt_unix.run
+
+let map f x =
+  Lwt.map (Either.fmap f) x
+
+let split3 s sep =
+  let (a,b) =
+    BatString.split s sep in
+  let (b,c) =
+    BatString.split b sep in
+  (a,b,c)
+
+let handler f (stream, _) =
+  let rec write_fun () =
+    Lwt_stream.next stream
+    >>= fun { WebSocket.content; _ } -> begin
+      Lwt.return @@ match BatString.split content ":" with
+        | ("5", content) ->
+          let (_,_,json) =
+            split3 content ":"
+          in
+          f (Tiny_json.Json.parse json)
+        | _ -> print_endline ("-->" ^ content)
+    end
+    >>= write_fun
+  in
+  write_fun ()
+
+let socket_io f url =
+  let x =
+    (Client.get Uri.(of_string url) >>= response)
+    +> Lwt.map (fun x -> Either.bind x (fun s -> match BatString.nsplit s ":" with
+      | sid :: heartbeat :: _ -> `Ok (sid, heartbeat)
+      | _ -> `Error "socket io handshake error"))
+    +> map (fun (sid, heartbeat) ->
+      (Uri.of_string @@ Printf.sprintf "ws://keima.c.node-ninja.com/socket.io/1/websocket/%s" sid), heartbeat)
+    >>= (function
+      | `Ok (uri, _) -> WebSocket.with_connection uri (handler f)
+      | `Error _ -> assert false)
+  in
+  Lwt_unix.run x

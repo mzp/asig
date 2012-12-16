@@ -29,9 +29,20 @@ type message (: Ignore_unknown_fields :) = {
 
 type messages = message list with conv(json)
 
+(* socket io event *)
+type content = {
+  content : message
+} with conv(json)
+
+type event = {
+  event_name as "name" : string;
+  args : string * string
+} with conv(json)
+
 module type S = sig
-  val get : string -> (string, string) Either.t
-  val post : string -> (string * string) list -> (string, string) Either.t
+  val get       : string -> (string, string) Either.t
+  val post      : string -> (string * string) list -> (string, string) Either.t
+  val socket_io : (Tiny_json.Json.t -> unit) -> string -> unit result
 end
 
 module Make(Http : S) = struct
@@ -92,4 +103,20 @@ module Make(Http : S) = struct
       "api_key", BatOption.get t.api_key
     ]
     >>= const (`Ok ())
+
+  let on_message f url =
+    Http.socket_io (fun json ->
+      try
+      let { args=(_,content); _ } =
+        event_of_json_exn json
+      in
+      let x =
+        Json.parse content
+        +> lift content_of_json
+        +> Either.fmap (fun { content; _ } -> f content)
+      in
+      ignore x
+      with _ -> print_endline "error"
+    ) url
+
 end

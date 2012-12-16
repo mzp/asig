@@ -20,6 +20,9 @@ module Stub = struct
     params := p;
     url := u;
     `Ok !response
+
+  let socket_io _ _ =
+    assert false
 end
 
 module As = Asig.AsakusaSatellite.Make(Stub)

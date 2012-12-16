@@ -15,8 +15,9 @@ type message = {
 }
 
 module type S = sig
-  val get : string -> string result
-  val post : string -> (string * string) list -> string result
+  val get       : string -> string result
+  val post      : string -> (string * string) list -> string result
+  val socket_io : (Tiny_json.Json.t -> unit) -> string -> unit result
 end
 
 module Make : functor (Http : S) -> sig
@@ -24,4 +25,5 @@ module Make : functor (Http : S) -> sig
   val rooms : t -> room list result
   val messages : string -> t -> message list result
   val post  : string -> string -> t -> unit result
+  val on_message : (message -> unit) -> string -> unit result
 end

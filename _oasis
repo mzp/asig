@@ -11,14 +11,14 @@ BuildTools: ocamlbuild, camlp4
 Library asig
   Pack:    true
   Path:    lib
-  Modules: Version, AsakusaSatellite, Http, Base
+  Modules: Version, AsakusaSatellite, Http, Base, WebSocket
   CompiledObject: best
   ByteOpt: -w +a -warn-error +a -annot
   NativeOpt: -w +a -warn-error +a -annot
   BuildDepends: camlp4,
                 tiny_json_conv, meta_conv.syntax,
-                cohttp.lwt, lwt.unix,
-                batteries
+                cohttp.lwt, lwt.unix, lwt.syntax,
+                batteries, bitstring, bitstring.syntax, cryptokit
 
 Executable main
   Path: src

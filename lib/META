@@ -1,9 +1,9 @@
 # OASIS_START
-# DO NOT EDIT (digest: 4d2136c5e092f5df0981aa744fef254b)
+# DO NOT EDIT (digest: a2d0bb7ea479af83d4931f3c2acc6378)
 version = "0.1.0"
 description = "as"
 requires =
-"camlp4 tiny_json_conv meta_conv.syntax cohttp.lwt lwt.unix batteries"
+"camlp4 tiny_json_conv meta_conv.syntax cohttp.lwt lwt.unix lwt.syntax batteries bitstring bitstring.syntax cryptokit"
 archive(byte) = "asig.cma"
 archive(byte, plugin) = "asig.cma"
 archive(native) = "asig.cmxa"

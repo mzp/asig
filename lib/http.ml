@@ -37,17 +37,22 @@ let split3 s sep =
     BatString.split b sep in
   (a,b,c)
 
-let handler f (stream, _) =
+let handler f (stream, push) =
   let rec write_fun () =
     Lwt_stream.next stream
     >>= fun { WebSocket.content; _ } -> begin
-      Lwt.return @@ match BatString.split content ":" with
+      match BatString.split content ":" with
         | ("5", content) ->
           let (_,_,json) =
             split3 content ":"
           in
-          f (Tiny_json.Json.parse json)
-        | _ -> print_endline ("-->" ^ content)
+          Lwt.return @@ f (Tiny_json.Json.parse json)
+        | ("1",_) ->
+          wrap (fun () ->
+            print_endline "subs";
+            push (Some {WebSocket.opcode=`Text; final=true; content="5:::{ \"name\":\"subscribe\", \"args\":[\"as-50d07248489e0117e6000003\"]}"}))
+        | _ ->
+          Lwt.return @@ print_endline ("-->" ^ content)
     end
     >>= write_fun
   in
@@ -60,7 +65,7 @@ let socket_io f url =
       | sid :: heartbeat :: _ -> `Ok (sid, heartbeat)
       | _ -> `Error "socket io handshake error"))
     +> map (fun (sid, heartbeat) ->
-      (Uri.of_string @@ Printf.sprintf "ws://keima.c.node-ninja.com/socket.io/1/websocket/%s" sid), heartbeat)
+      (Uri.of_string @@ Printf.sprintf "ws://localhost:3001/socket.io/1/websocket/%s" sid), heartbeat)
     >>= (function
       | `Ok (uri, _) -> WebSocket.with_connection uri (handler f)
       | `Error _ -> assert false)

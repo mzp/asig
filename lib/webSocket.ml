@@ -92,10 +92,15 @@ let int_of_opcode = function
   | `Nonctrl i    -> i
 
 let xor mask msg =
-  for i = 0 to String.length msg - 1 do (* masking msg to send *)
-    msg.[i] <- Char.chr $
+  let len =
+    String.length msg in
+  let msg' =
+    String.make len ' ' in
+  for i = 0 to len - 1 do (* masking msg to send *)
+    msg'.[i] <- Char.chr $
       Char.code mask.[i mod 4] lxor Char.code msg.[i]
-  done
+  done;
+  msg'
 
 let read_be nbits ic =
   let nbytes = nbits / 8 in
@@ -137,22 +142,22 @@ let rec read_frames ic push =
     else return () in
   let content = String.create payload_len in
   lwt () = Lwt_io.read_into_exactly ic content 0 payload_len in
-  let () = if masked then xor mask content in
+  let content = if masked then xor mask content else content in
   let () = push (Some { opcode; final; content }) in
   read_frames ic push
 
 let rec write_frames ~masked stream oc =
-  let send_frame fr =
+  let send_frame frame =
     let mask = CK.Random.string CK.Random.secure_rng 4 in
-    let len = String.length fr.content in
+    let len = String.length frame.content in
     let extensions = 0 in
-    let opcode = int_of_opcode fr.opcode in
+    let opcode = int_of_opcode frame.opcode in
     let payload_len = match len with
       | n when n < 126      -> len
       | n when n < 1 lsl 16 -> 126
       | _                   -> 127 in
     let bitstring = Bitstring.string_of_bitstring $
-      BITSTRING {fr.final: 1; extensions: 3;
+      BITSTRING {frame.final: 1; extensions: 3;
                  opcode: 4; masked : 1; payload_len: 7} in
     lwt () = Lwt_io.write oc bitstring in
     lwt () =
@@ -161,9 +166,9 @@ let rec write_frames ~masked stream oc =
         | n when n < (1 lsl 16) -> Int64.of_int n |> write_int16 oc
         | n                     -> Int64.of_int n |> write_int64 oc)
     in
-    lwt () = if masked then Lwt_io.write_from_exactly oc mask 0 4
-        >|= fun () -> xor mask fr.content else return () in
-    lwt () = Lwt_io.write_from_exactly oc fr.content 0 len in
+    lwt content = if masked then Lwt_io.write_from_exactly oc mask 0 4
+        >|= fun () -> xor mask frame.content else return frame.content in
+    lwt () = Lwt_io.write_from_exactly oc content 0 len in
     Lwt_io.flush oc in
   Lwt_stream.next stream >>= send_frame >> write_frames ~masked stream oc
 

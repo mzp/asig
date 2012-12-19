@@ -116,9 +116,7 @@ module Make(Http : S) = struct
             "as-50d07248489e0117e6000003"
           ]}
         in
-        print_endline json;
         send ("5:::"^json)
-(* { \"name\":\"subscribe\", \"args\":[\"as-50d07248489e0117e6000003\"]}"*)
       | `Json json ->
         let open Either in
         let _ =

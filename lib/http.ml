@@ -1,6 +1,19 @@
 open Base
-open Lwt
 open Cohttp_lwt_unix
+
+type 'a result = ('a, string) ElMonad.t
+
+let (>>=) = Lwt.bind
+
+type socket_io_event =
+  | Connection
+  | Json of Tiny_json.Json.t
+
+module type S = sig
+  val get       : Uri.t -> string result
+  val post      : Uri.t -> (string * string) list -> string result
+  val socket_io : f:((socket_io_event -> unit) -> socket_io_event -> unit) -> Uri.t -> unit result
+end
 
 let response = function
   | None ->
@@ -15,24 +28,6 @@ let response = function
     else
       Lwt.return (`Error (Cohttp.Code.string_of_status status))
 
-
-let get url =
-  (Client.get Uri.(of_string url) >>= response)
-  +> Lwt_unix.run
-
-let post url params =
-  let params =
-    Cohttp.Header.of_list params
-  in
-  (Client.post_form ~params Uri.(of_string url) >>= response)
-  +> Lwt_unix.run
-
-let map f x =
-  Lwt.map (Either.fmap f) x
-
-let bind f x =
-  Lwt.map (fun y -> Either.bind y f) x
-
 let split3 s sep =
   let (a,b) =
     BatString.split s sep in
@@ -40,50 +35,59 @@ let split3 s sep =
     BatString.split b sep in
   (a,b,c)
 
-let handler f (stream, push) =
-  let send_data content =
-    push (Some {WebSocket.opcode=`Text; final=true; content})
-  in
-  let rec write_fun () =
-    Lwt_stream.next stream
-    >>= fun { WebSocket.content; _ } -> begin
-      match BatString.split content ":" with
-        | ("5", content) ->
-          let (_,_,json) =
-            split3 content ":"
-          in
-          Lwt.return @@ f send_data @@ `Json (Tiny_json.Json.parse json)
-        | ("1",_) ->
-          wrap (fun () -> f send_data `Connection)
-        | ("2",_) ->
-          wrap (fun () ->
-            push (Some {WebSocket.opcode=`Text; final=true; content="2::"}))
-        | _ ->
-          Lwt.return @@ print_endline ("-->" ^ content)
-    end
-    >>= write_fun
-  in
-  write_fun ()
+module Default = struct
+  let get uri =
+    Client.get uri >>= response
 
-let socket_io ~f url =
-  let url =
-    Uri.of_string url
-  in
-  let x =
+  let post uri params =
+    let params =
+      Cohttp.Header.of_list params
+    in
+    Client.post_form ~params uri >>= response
+
+  let handler f (stream, push) =
+    let send_data = function
+      | Json json ->
+        push (Some {WebSocket.opcode=`Text; final=true; content="5:::"^JsonUtil.string_of_json json})
+      | Connection ->
+        ()
+    in
+    let rec write_fun () =
+      Lwt_stream.next stream
+      >>= fun { WebSocket.content; _ } -> begin
+        match BatString.split content ":" with
+          | ("5", content) ->
+            let (_,_,json) =
+              split3 content ":"
+            in
+            Lwt.return @@ f send_data @@ Json (Tiny_json.Json.parse json)
+          | ("1",_) ->
+            Lwt.wrap (fun () -> f send_data Connection)
+          | ("2",_) ->
+            Lwt.wrap (fun () ->
+              push (Some {WebSocket.opcode=`Text; final=true; content="2::"}))
+          | _ ->
+            Lwt.return @@ print_endline ("-->" ^ content)
+      end
+      >>= write_fun
+    in
+    write_fun ()
+
+  let socket_io ~f uri =
     (* connect to entry point *)
-    (Client.get url >>= response)
+    get uri
     (* get sid from response *)
-    +> bind (fun s -> match BatString.nsplit s ":" with
+    +> ElMonad.lift (fun s -> match BatString.nsplit s ":" with
       | sid :: heartbeat :: _ -> `Ok (sid, heartbeat)
       | _ -> `Error "socket io handshake error")
     (* create url for websocket *)
-    +> map (fun (sid, _) ->
-      Uri.make ~scheme:"ws" ?host:(Uri.host url) ?port:(Uri.port url)
-        ~path:(Printf.sprintf "%swebsocket/%s" (Uri.path url) sid)
+    +> ElMonad.fmap (fun (sid, _) ->
+      Uri.make ~scheme:"ws" ?host:(Uri.host uri) ?port:(Uri.port uri)
+        ~path:(Printf.sprintf "%swebsocket/%s" (Uri.path uri) sid)
         ())
     (* handshake with websocket *)
     >>= (function
       | `Ok uri -> WebSocket.with_connection uri (handler f)
       | `Error _ as e -> Lwt.return e)
-  in
-  Lwt_unix.run x
+
+end

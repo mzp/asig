@@ -7,8 +7,7 @@ type t = {
   entry_point : string
 }
 
-type 'a result = ('a, string) Either.t
-
+type 'a result = ('a, string) ElMonad.t
 
 (* json for room *)
 type room (: Ignore_unknown_fields :) = {
@@ -29,7 +28,6 @@ type message (: Ignore_unknown_fields :) = {
 
 type messages = message list with conv(json)
 
-(* socket io event *)
 type content = {
   content : message
 } with conv(json)
@@ -39,17 +37,7 @@ type event = {
   args : string list
 } with conv(json)
 
-type socket_io_event = [
-  `Connection
-| `Json of Tiny_json.Json.t ]
-
-module type S = sig
-  val get       : string -> (string, string) Either.t
-  val post      : string -> (string * string) list -> (string, string) Either.t
-  val socket_io : f:((string -> unit) -> socket_io_event -> unit) -> string -> unit result
-end
-
-module Make(Http : S) = struct
+module Make(H : Http.S) = struct
   let init ?api_key entry_point = {
     api_key;
     entry_point
@@ -74,62 +62,55 @@ module Make(Http : S) = struct
       +> function "" -> "" | s -> "?" ^ s
     in
     Printf.sprintf "%s/api/v1/%s.json%s" entry_point path params
+    +> Uri.of_string
 
-  let http_get url =
-    Http.get url
-    +> Either.fmap (fun s -> Json.parse s)
+  let http_get uri =
+    H.get uri
+    +> ElMonad.fmap Json.parse
 
-  let lift f x =
-    match f x with
-      | `Ok x -> `Ok x
-      | `Error _ -> `Error "conversion error"
+  let conv f =
+    ElMonad.lift (fun x ->
+      match f x with
+        | `Ok x -> `Ok x
+        | `Error _ -> `Error "conversion error")
 
   let rooms t =
-    let open Either in
     api t "room/list" []
     +> http_get
-    >>= lift rooms_of_json
+    +> conv rooms_of_json
 
   let messages room_id t =
-    let open Either in
     api t "message/list" ["room_id", room_id]
     +> http_get
-    >>= lift messages_of_json
+    +> conv messages_of_json
 
   let post room_id message t =
-    let open Either in
     let url =
       api { t with api_key = None } "message" []
     in
-    Http.post url @@ [
+    H.post url [
       "room_id", room_id;
       "message", message;
       "api_key", BatOption.get t.api_key
     ]
-    >>= const (`Ok ())
+    +> ElMonad.fmap (const ())
 
-  let on_message f url =
-    Http.socket_io url ~f:begin fun send -> function
-      | `Connection ->
-        let json =
-          JsonUtil.string_of_json @@ json_of_event { event_name = "subscribe"; args = [
-            "as-50d07248489e0117e6000003"
-          ]}
-        in
-        send ("5:::"^json)
-      | `Json json ->
-        let open Either in
-        let _ =
-          event_of_json json
-          >>= function
-            | { event_name = "message_create"; args=[_; json] } ->
-              Json.parse json
-              +> lift content_of_json
-              +> Either.fmap (fun { content; _ } -> f content)
-              +> Either.return
+  let on_message ~f uri { room_id; _ } =
+    H.socket_io uri ~f:begin fun send -> function
+      | Http.Connection ->
+        send @@ Http.Json (json_of_event { event_name = "subscribe"; args = [
+          "as-" ^ room_id
+        ]})
+      | Http.Json json ->
+        try
+          match event_of_json_exn json  with
+            | { event_name = "message_create"; args = [_; json]; _ } ->
+              let { content; _ } =
+                content_of_json_exn @@ Json.parse json in
+              f content
             | _ ->
-              Either.return (`Error "unknown event")
-        in
-        ()
+              ()
+        with _ ->
+          ()
     end
 end

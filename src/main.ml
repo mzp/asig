@@ -1,18 +1,40 @@
 open Asig
-open AsakusaSatellite
 open Base
+open AsakusaSatellite
+open Lwt
 
-module As = Asig.AsakusaSatellite.Make(Asig.Http.Default)
+module As = AsakusaSatellite.Make(Http.Default)
 
-let _ =
-  let uri =
-    Uri.of_string Sys.argv.(1)
-  in
+let api =
+  As.init ~api_key:Sys.argv.(1) "http://asakusa-satellite.org"
+
+let uri =
+  Uri.of_string Sys.argv.(2)
+
+let room_id =
+  Sys.argv.(3)
+
+let on_recv = function
+  | Irc.PRIVMSG { Irc.channel; message; _ } ->
+    As.post channel message api
+    >>= (fun _ -> Lwt.return ())
+
+let action push =
   let room =  {
-    room_id   = Sys.argv.(2);
+    room_id   = room_id;
     room_name = ""
   } in
-  Lwt_unix.run @@ As.on_message uri room ~f:begin fun { name; body; room = { room_name; _ }; _ } ->
-    Printf.printf "%s@%s %s\n" name room_name body;
-    flush stdout
+  As.on_message uri room ~f:begin fun { screen_name; body; _  } ->
+    push @@ Some (Irc.PRIVMSG {
+      prefix      = Some screen_name;
+      Irc.channel = "as";
+      message     = body
+    })
   end
+  >>= (fun _ -> Lwt.return ())
+
+let _server =
+  Irc.establish_server "localhost" "8888" ~on_recv ~action
+
+let _ =
+  Lwt_main.run (fst (Lwt.wait ()))

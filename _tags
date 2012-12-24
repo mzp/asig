@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: d98eda9ad879b4201a5a63e71f6edfe1)
+# DO NOT EDIT (digest: 8e5b97e558327823ca4508b83f5434f0)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -17,6 +17,7 @@
 "lib/asig.cmxs": use_asig
 "lib/version.cmx": for-pack(Asig)
 "lib/asakusaSatellite.cmx": for-pack(Asig)
+"lib/irc.cmx": for-pack(Asig)
 "lib/base.cmx": for-pack(Asig)
 "lib/http.cmx": for-pack(Asig)
 "lib/webSocket.cmx": for-pack(Asig)

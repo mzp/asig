@@ -11,7 +11,7 @@ BuildTools: ocamlbuild, camlp4
 Library asig
   Pack:    true
   Path:    lib
-  Modules: Version, AsakusaSatellite, Base
+  Modules: Version, AsakusaSatellite, Irc, Base
   InternalModules: Http, WebSocket, JsonUtil, ElMonad
   CompiledObject: best
   ByteOpt: -w +a -warn-error +a -annot

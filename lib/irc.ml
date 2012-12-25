@@ -37,6 +37,9 @@ let to_string = function
       message
 
 let server_fun on_recv action (io, oc) =
+  let _ =
+    Lwt_unix.on_signal 13 (fun _ -> ())
+  in
   let recv =
     Lwt_io.read_lines io
     +> Lwt_stream.iter_s (fun line ->
@@ -52,7 +55,12 @@ let server_fun on_recv action (io, oc) =
     +> Lwt_stream.map to_string
     +> Lwt_stream.iter_s (Lwt_io.write_line oc)
   in
-  recv <?> send () <?> action push
+  let rec ping () =
+    Lwt_unix.sleep 30.
+    >> Lwt_io.write_line oc "PING localhost:8888"
+    >> ping ()
+  in
+  recv <?> send () <?> action push <?> ping ()
 
 let sockaddr_of_dns node service =
   let open Lwt_unix in

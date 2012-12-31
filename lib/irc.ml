@@ -76,29 +76,35 @@ module Command = struct
 
   type t =
     | PrivMsg of string * string * string
-    | Nick of string
+    | Nick    of string
+    | Join    of string
 
   let from_message = function
     | { command = "PRIVMSG"; prefix; params = [channel; message] } ->
       Some (PrivMsg ((BatOption.default "" prefix), channel, message))
     | { command = "NICK"   ; params = [ nick ]; _ } ->
       Some (Nick nick)
+    | { command = "JOIN"   ; params = [ channel ]; _ } ->
+      Some (Join channel)
     | _ ->
       None
 end
 
 module Reply = struct
+  open Message
+
   type t =
     | Welcome of string * string
     | YourHost
     | Created
-    | MyInfo of string * string
+    | MyInfo  of string * string
+    | Topic   of string * string
     | PrivMsg of string * string * string
 
   let to_message nick = function
     | Welcome (user, host) ->
       {
-        Message.prefix = None;
+        prefix = None;
         command = "001";
         params = [
           nick;
@@ -106,7 +112,7 @@ module Reply = struct
         ] }
     | YourHost ->
       {
-        Message.prefix = None;
+        prefix = None;
         command = "002";
         params = [
           nick;
@@ -114,7 +120,7 @@ module Reply = struct
         ] }
     | Created ->
       {
-        Message.prefix = None;
+        prefix = None;
         command = "003";
         params = [
           nick;
@@ -122,49 +128,50 @@ module Reply = struct
         ] }
     | MyInfo (user, channel) ->
       {
-        Message.prefix = None;
+        prefix = None;
         command = "004";
         params = [
           nick;
           Printf.sprintf "asig 0.0.1 %s %s" user channel
         ] }
+    | Topic (channel, topic) ->
+      {
+        prefix = None;
+        command = "TOPIC";
+        params = [ channel; topic ] }
     | PrivMsg (user, channel, message) ->
       {
-        Message.prefix = Some user;
+        prefix = Some user;
         command = "PRIVMSG";
         params = [
           channel;
           message
         ] }
+
 end
 
-let server_fun on_recv action (io, oc) =
+let server_fun action (io, oc) =
   let _ =
     Lwt_unix.on_signal_full 13 (fun _ _ -> ())
   in
-  let stream, push =
+  let reply_stream, reply =
     Lwt_stream.create () in
-  let recv =
+  let command_stream =
     Lwt_io.read_lines io
-    +> tee (fun stream ->
-      Lwt_stream.on_terminate stream (fun () -> push None))
-    +> Lwt_stream.iter_s (fun line ->
-      match Command.from_message @@ Message.from_string line with
-        | None ->
-          Lwt_log.notice_f "IRC %s ==> error\n" line
-          >> Lwt.return ()
-        | Some c ->
-          Lwt_log.notice_f "IRC %s\n" line
-          >> on_recv push c)
+    +> tee (fun stream ->  Lwt_stream.on_terminate stream (fun () -> reply None))
+    +> Lwt_stream.map_s (fun line ->
+      Lwt_log.notice_f "IRC %s\n" line
+      >> Lwt.return line)
+    +> Lwt_stream.filter_map (Command.from_message $ Message.from_string)
   in
   let send () =
-    stream
+    reply_stream
     +> Lwt_stream.map (Message.to_string $ uncurry Reply.to_message)
     +> Lwt_stream.iter_s (fun s ->
       Lwt_log.notice_f "--> %s\n" s
       >> Lwt_io.write_line oc s)
   in
-  recv <?> send () <?> action push
+  send () <?> action reply command_stream
 
 let sockaddr_of_dns node service =
   let open Lwt_unix in
@@ -176,12 +183,12 @@ let sockaddr_of_dns node service =
           raise_lwt Not_found)
       >|= fun ai -> ai.ai_addr
 
-let establish_server host port ~on_recv ~action =
+let establish_server host port ~action =
   sockaddr_of_dns host port
   >>= begin fun sc ->
     Lwt.return @@ Lwt_io.establish_server sc begin fun ch ->
       try
-        Lwt.ignore_result (Lwt_unix.handle_unix_error (server_fun on_recv action) ch;
+        Lwt.ignore_result (Lwt_unix.handle_unix_error (server_fun action) ch;
                            >> Lwt_log.notice_f "client disconnected")
       with _ ->
         print_endline "SOME EXCEPTION"

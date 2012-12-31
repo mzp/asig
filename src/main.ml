@@ -16,7 +16,7 @@ let room_id =
 
 let on_recv push = function
   | Irc.Command.PrivMsg (_, channel, message) ->
-    As.post channel message api
+    As.post (BatString.lchop channel) message api
     >>= (fun _ -> Lwt.return ())
   | Irc.Command.Nick _ ->
     let open Irc.Reply in
@@ -34,7 +34,7 @@ let action push =
     room_name = ""
   } in
   As.on_message uri room ~f:begin fun { screen_name; body; _  } ->
-    push @@ Some ("mzp", Irc.Reply.PrivMsg (screen_name, "as", body))
+    push @@ Some ("mzp", Irc.Reply.PrivMsg (screen_name, "#as", body))
   end
   >>= (fun _ -> Lwt.return ())
 

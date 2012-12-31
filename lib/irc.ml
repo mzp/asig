@@ -133,7 +133,7 @@ module Reply = struct
         Message.prefix = Some user;
         command = "PRIVMSG";
         params = [
-          "#" ^ channel;
+          channel;
           message
         ] }
 end

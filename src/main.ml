@@ -14,10 +14,19 @@ let uri =
 let room_id =
   Sys.argv.(3)
 
-let on_recv = function
+let on_recv (push : Irc.Reply.t option -> unit) = function
   | Irc.PRIVMSG { Irc.channel; message; _ } ->
     As.post channel message api
     >>= (fun _ -> Lwt.return ())
+  | Irc.NICK _ ->
+    let open Irc.Reply in
+    List.iter (fun s -> push (Some s)) [
+      Welcome ("mzp","localhost");
+      YourHost;
+      Created;
+      MyInfo ("eixwy", "spknm")
+    ];
+    Lwt.return ()
 
 let action push =
   let room =  {
@@ -25,11 +34,7 @@ let action push =
     room_name = ""
   } in
   As.on_message uri room ~f:begin fun { screen_name; body; _  } ->
-    push @@ Some (Irc.PRIVMSG {
-      prefix      = Some screen_name;
-      Irc.channel = "as";
-      message     = body
-    })
+    push @@ Some (Irc.Reply.PrivMsg (screen_name, "as", body))
   end
   >>= (fun _ -> Lwt.return ())
 

@@ -13,12 +13,12 @@ module Message = struct
       ""
     | x :: xs ->
       if String.contains x ' ' && not trail then
-        ":" ^ x ^ " " ^ of_params true xs
+        " :" ^ x ^ of_params true xs
       else
-        x ^ " " ^ of_params trail xs
+        " " ^ x ^ of_params trail xs
 
   let to_string { prefix; command; params } =
-    Printf.sprintf "%s%s %s"
+    Printf.sprintf "%s%s%s"
       (match prefix with Some p -> ":" ^ p ^ " " | None -> "")
       command
       (of_params false params)
@@ -51,8 +51,6 @@ module Message = struct
           str, ""
       in
       x :: parse_params xs
-
-
 
   let from_string s =
     let prefix, command, params =

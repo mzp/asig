@@ -55,6 +55,9 @@ let action push command_stream  =
     >>= (function
       | `Msg { screen_name; body; _ } ->
         Lwt.wrap (fun () ->
+          let body =
+            Str.global_replace (Str.regexp "[\r\n]") " " body
+          in
           if screen_name = state.nick then
             push @@ Some (state.nick, Irc.Reply.Topic ("#as", body))
           else

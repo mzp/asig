@@ -23,6 +23,15 @@ HOW TO INSTALL
 
 see INSTALL.txt
 
+HOW TO RUN
+------------------------------
+
+    asig <your api key> <keima entry point> <room id>
+
+For example:
+
+    asig DeyH10Fxxxxxxxxxx 'http://keima.example.com/socket.io/1/?app=604a12adz3d38cxxxxxxx' '7z3615xxxxx'
+
 Authors
 -----------------------------
 

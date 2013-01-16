@@ -5,9 +5,6 @@ open Lwt
 
 module As = AsakusaSatellite.Make(Http.Default)
 
-let api =
-  As.init ~api_key:Sys.argv.(1) "http://asakusa-satellite.org"
-
 let uri =
   Uri.of_string Sys.argv.(2)
 
@@ -15,13 +12,38 @@ let room_id =
   Sys.argv.(3)
 
 type t = {
-  nick : string
+  nick : string;
+  api  : AsakusaSatellite.t option
 }
+
+let parse s =
+  BatString.nsplit s " "
+  +> List.map (flip  BatString.split "=")
 
 let on_recv push state = function
   | Irc.Command.PrivMsg (_, channel, message) ->
-    As.post (BatString.lchop channel) message api
-    >>= (fun _ -> Lwt.return state)
+    begin match state.api with
+      | Some api ->
+        As.post (BatString.lchop channel) message api
+      | None ->
+        Lwt.return (`Error "AsakusaSatellite module is not initialized")
+    end >>= (fun _ -> Lwt.return state)
+  | Irc.Command.User (_, _, _, realname) ->
+    (* embed parameter in realname
+       (e.g. "api=some_apikey foo=bar baz=xxx")
+    *)
+    let params =
+      parse realname
+    in
+    let api =
+      let open BatOption.Monad in
+      let module L = BatList.Exceptionless in
+      let (>>=)    = bind in
+      L.assoc "api_key" params >>= (fun api_key ->
+        L.assoc "entry" params >>= (fun entry ->
+          return @@ As.init ~api_key entry))
+    in
+    Lwt.return { state with api }
   | Irc.Command.Nick nick ->
     let open Irc.Reply in
     List.iter (fun s -> push (Some (nick, s))) [
@@ -30,7 +52,7 @@ let on_recv push state = function
       Created;
       MyInfo ("eixwy", "spknm")
     ];
-    Lwt.return { nick }
+    Lwt.return { state with nick }
   | Irc.Command.Join channel ->
     push @@ Some (state.nick, Irc.Reply.Topic (channel, "Welcome to the AsakusaSatellite"));
     Lwt.return state
@@ -69,7 +91,7 @@ let action push command_stream  =
       | `Exit ->
         Lwt.return ())
   in
-  (loop { nick = "" }) <&> (as_loop >>= (fun _ -> Lwt.return ()))
+  (loop { nick = "unknown"; api = None }) <&> (as_loop >>= (fun _ -> Lwt.return ()))
 
 let _server =
   Irc.establish_server "localhost" "8888" ~action

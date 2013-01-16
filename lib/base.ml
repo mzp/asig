@@ -6,3 +6,4 @@ let const x _ = x
 let tee f x = ignore (f x); x
 let curry f x y = f (x, y)
 let uncurry f (x, y) = f x y
+let flip f x y = f y x

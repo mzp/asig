@@ -74,12 +74,15 @@ module Command = struct
 
   type t =
     | PrivMsg of string * string * string
+    | User    of string * string * string * string
     | Nick    of string
     | Join    of string
 
   let from_message = function
     | { command = "PRIVMSG"; prefix; params = [channel; message] } ->
       Some (PrivMsg ((BatOption.default "" prefix), channel, message))
+    | { command = "USER"   ; params = [ username; hostname; servername; realname ]; _ } ->
+      Some (User (username, hostname, servername, realname))
     | { command = "NICK"   ; params = [ nick ]; _ } ->
       Some (Nick nick)
     | { command = "JOIN"   ; params = [ channel ]; _ } ->

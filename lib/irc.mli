@@ -11,6 +11,7 @@ end
 module Command : sig
   type t =
     | PrivMsg of string * string * string
+    | User    of string * string * string * string
     | Nick    of string
     | Join    of string
 

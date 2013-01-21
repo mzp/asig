@@ -6,10 +6,7 @@ open Lwt
 module As = AsakusaSatellite.Make(Http.Default)
 
 let uri =
-  Uri.of_string Sys.argv.(2)
-
-let room_id =
-  Sys.argv.(3)
+  Uri.of_string Sys.argv.(1)
 
 (* embed parameter in realname
    (e.g. "api=some_apikey foo=bar baz=xxx")
@@ -72,9 +69,24 @@ module IrcAction = struct
       assoc "entry" params >>= (fun entry ->
         return @@ As.init ~api_key entry))
 
+  let find_room { AsigState.api; _ } id =
+    match api with
+      | Some api ->
+        As.rooms api
+        >>= (function
+          | `Ok rooms -> Lwt.return @@ BatList.Exceptionless.find
+              (fun { nickname; room_id; _ } -> Some id = nickname || id = room_id)
+            rooms
+          | `Error _  -> Lwt.return None)
+      | None ->
+        Lwt.return None
+
+  let channel_name =
+    BatString.lchop
+
   let on_command state = function
     | Irc.Command.PrivMsg (_, channel, message) ->
-      AsigState.send_to_as state (BatString.lchop channel) message
+      AsigState.send_to_as state (channel_name channel) message
       >>= (fun _ -> Lwt.return state)
     | Irc.Command.User (_, _, _, realname) ->
       Lwt.return { state with
@@ -86,32 +98,37 @@ module IrcAction = struct
       List.iter (AsigState.send_to_irc state) @@ welcome nick;
       Lwt.return state
     | Irc.Command.Join channel ->
-      (* FIXME: use channel name to connect as *)
-      let room =
-        { room_id = room_id; room_name = ""; nickname=None }
-      in
-      let _ =
-        As.on_message uri room ~f:(AsigState.recv_from_as state)
-      in
-      AsigState.send_to_irc state (Irc.Reply.Join channel);
-      AsigState.send_to_irc state (Irc.Reply.Topic (channel, "Welcome to the AsakusaSatellite"));
-      Lwt.return state
+      find_room state (channel_name channel)
+      >>= function
+        | Some room ->
+          let _ =
+            As.on_message uri room ~f:(AsigState.recv_from_as state)
+          in
+          AsigState.send_to_irc state (Irc.Reply.Join channel);
+          AsigState.send_to_irc state (Irc.Reply.Topic (channel, "Welcome to " ^ channel));
+          Lwt.return state
+        | None ->
+          AsigState.send_to_irc state (Irc.Reply.Topic (channel, "no such channel"));
+          Lwt.return state
 end
 
 module AsAction = struct
   let cleanup str =
     Str.global_replace (Str.regexp "[\r\n]") " " str
-
-  let on_command state { screen_name; body; _ } =
+  let on_command state { screen_name; body; room = { nickname; room_id; _ }; _ } =
     let body =
       cleanup body
     in
-    (* FIXME: use room info to detect channel *)
+    let channel =
+      match nickname with
+        | Some name -> name
+        | None      -> room_id
+    in
     AsigState.send_to_irc state @@
       if AsigState.is_me state screen_name then
-        Irc.Reply.Topic ("#as", body)
+        Irc.Reply.Topic ("#" ^ channel, body)
       else
-        Irc.Reply.PrivMsg (screen_name, "#as", body);
+        Irc.Reply.PrivMsg (screen_name, "#" ^ channel, body);
     Lwt.return state
 end
 

@@ -101,6 +101,7 @@ module Reply = struct
     | MyInfo  of string * string
     | Topic   of string * string
     | PrivMsg of string * string * string
+    | Join    of string
 
   let to_message nick = function
     | Welcome (user, host) ->
@@ -148,7 +149,13 @@ module Reply = struct
           channel;
           message
         ] }
-
+    | Join channel ->
+      {
+        prefix = Some nick;
+        command = "JOIN";
+        params = [
+          channel
+        ] }
 end
 
 let server_fun action (io, oc) =

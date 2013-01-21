@@ -52,8 +52,15 @@ let tests = "AsakusaSatellite" >::: [
   "rooms" >:: begin fun () ->
     with_stub
       ~url:"http://example.com//api/v1/room/list.json"
-      ~response:"[{\"id\":\"123\", \"name\" : \"foo\"}]" begin fun () ->
-        assert_success [ { room_id = "123"; room_name = "foo" }] @@ rooms api
+      ~response:"[{\"id\":\"123\", \"name\" : \"foo\", \"nickname\" : \"nick\" }]" begin fun () ->
+        assert_success [ { room_id = "123"; room_name = "foo"; nickname = Some "nick" }] @@ rooms api
+      end
+  end;
+  "rooms without nick" >:: begin fun () ->
+    with_stub
+      ~url:"http://example.com//api/v1/room/list.json"
+      ~response:"[{\"id\":\"123\", \"name\" : \"foo\", \"nickname\" : null }]" begin fun () ->
+        assert_success [ { room_id = "123"; room_name = "foo"; nickname = None }] @@ rooms api
       end
   end;
   "invalid room json" >:: begin fun () ->
@@ -73,7 +80,7 @@ let tests = "AsakusaSatellite" >::: [
   "message list" >:: begin fun () ->
     with_stub
       ~url:"http://example.com//api/v1/message/list.json?room_id=room_id"
-      ~response:"[{ \"id\" : \"123\", \"body\":\"foo\", \"name\" : \"alice\", \"screen_name\" : \"Alice\", \"room\" : { \"id\" : \"123\", \"name\" : \"room\"}}]" begin fun () ->
+      ~response:"[{ \"id\" : \"123\", \"body\":\"foo\", \"name\" : \"alice\", \"screen_name\" : \"Alice\", \"room\" : { \"id\" : \"123\", \"name\" : \"room\", \"nickname\": null }}]" begin fun () ->
         assert_success [{
           message_id = "123";
           body       = "foo";
@@ -81,7 +88,8 @@ let tests = "AsakusaSatellite" >::: [
           screen_name = "Alice";
           room = {
             room_id = "123";
-            room_name = "room"
+            room_name = "room";
+            nickname = None
           }
         }] @@ messages "room_id" api
       end

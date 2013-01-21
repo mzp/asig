@@ -88,7 +88,7 @@ module IrcAction = struct
     | Irc.Command.Join channel ->
       (* FIXME: use channel name to connect as *)
       let room =
-        { room_id = room_id; room_name = "" }
+        { room_id = room_id; room_name = ""; nickname=None }
       in
       let _ =
         As.on_message uri room ~f:(AsigState.recv_from_as state)

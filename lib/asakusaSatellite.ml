@@ -12,7 +12,8 @@ type 'a result = ('a, string) ElMonad.t
 (* json for room *)
 type room (: Ignore_unknown_fields :) = {
   room_id as "id": string;
-  room_name as "name": string
+  room_name as "name": string;
+  nickname : string option
 } with conv(json)
 
 type rooms = room list with conv(json)

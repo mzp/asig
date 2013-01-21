@@ -3,7 +3,8 @@ type 'a result = ('a, string) Either.t Lwt.t
 
 type room = {
   room_id : string;
-  room_name : string
+  room_name : string;
+  nickname : string option
 }
 
 type message = {

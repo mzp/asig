@@ -26,6 +26,7 @@ module Reply : sig
     | MyInfo  of string * string
     | Topic   of string * string
     | PrivMsg of string * string * string
+    | Join    of string
 
   val to_message : string -> t -> Message.t
 end

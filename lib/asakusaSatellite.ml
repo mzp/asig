@@ -38,6 +38,28 @@ type event = {
   args : string list
 } with conv(json)
 
+
+module MessagePusher = struct
+  (* FIXME: support other pusher (e.g. socky, pusher)*)
+  module Param = struct
+    type t = {
+      url : string;
+      key : string
+    } with conv(json)
+  end
+
+  type t = {
+    name  : string;
+    param : Param.t
+  } with conv(json)
+end
+
+module Info = struct
+  type t = {
+    message_pusher : MessagePusher.t;
+  } with conv(json)
+end
+
 module Make(H : Http.S) = struct
   let init ?api_key entry_point = {
     api_key;
@@ -84,6 +106,11 @@ module Make(H : Http.S) = struct
     api t "message/list" ["room_id", room_id]
     +> http_get
     +> conv messages_of_json
+
+  let info t =
+    api t "service/info" []
+    +> http_get
+    +> conv Info.t_of_json
 
   let post room_id message t =
     let url =

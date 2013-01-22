@@ -36,8 +36,8 @@ let with_stub ~url ?(params = []) ~response f =
   Stub.params := [];
   Stub.response := response;
   f ();
-  assert_equal url    !Stub.url;
-  assert_equal params !Stub.params
+  assert_equal ~printer:id ~msg:"url"   url    !Stub.url;
+  assert_equal ~msg:"param" params !Stub.params
 
 module As = Asig.AsakusaSatellite.Make(Stub)
 open As
@@ -105,5 +105,22 @@ let tests = "AsakusaSatellite" >::: [
       ] begin fun () ->
         assert_success () @@ post "room_id" "hi" auth_api
       end
+  end;
+  "info" >:: begin fun () ->
+    with_stub
+      ~url:"http://example.com//api/v1/service/info.json?api_key=hoge"
+      ~response:"{\"message_pusher\":{\"name\":\"keima\",\"param\":{\"url\":\"url\",\"key\":\"key\"}}}"
+      ~params:[]
+      begin fun () ->
+        assert_success {
+          Info.message_pusher = {
+            MessagePusher.name = "keima";
+            param = {
+              MessagePusher.Param.url = "url";
+              key = "key"
+            }
+          }
+        } @@ info auth_api
+      end;
   end
 ]

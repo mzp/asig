@@ -5,9 +5,6 @@ open Lwt
 
 module As = AsakusaSatellite.Make(Http.Default)
 
-let uri =
-  Uri.of_string Sys.argv.(1)
-
 (* embed parameter in realname
    (e.g. "api=some_apikey foo=bar baz=xxx")
 *)
@@ -81,6 +78,17 @@ module IrcAction = struct
       | None ->
         Lwt.return None
 
+  let pusher_url { AsigState.api; _ } =
+    match api with
+      | Some api ->
+        As.info api
+        >>= (function
+          | `Ok { Info.message_pusher = { MessagePusher.param = { MessagePusher.Param.url; key }; _ }; _ } ->
+            Lwt.return @@ Some (Uri.of_string @@ Printf.sprintf "%s/socket.io/1/?app=%s" url key)
+          | `Error _  -> Lwt.return None)
+      | None ->
+        Lwt.return None
+
   let channel_name =
     BatString.lchop
 
@@ -101,12 +109,18 @@ module IrcAction = struct
       find_room state (channel_name channel)
       >>= function
         | Some room ->
-          let _ =
-            As.on_message uri room ~f:(AsigState.recv_from_as state)
-          in
-          AsigState.send_to_irc state (Irc.Reply.Join channel);
-          AsigState.send_to_irc state (Irc.Reply.Topic (channel, "Welcome to " ^ channel));
-          Lwt.return state
+          pusher_url state >>= begin function
+            | Some uri ->
+              let _ =
+                As.on_message uri room ~f:(AsigState.recv_from_as state)
+              in
+              AsigState.send_to_irc state (Irc.Reply.Join channel);
+              AsigState.send_to_irc state (Irc.Reply.Topic (channel, "Welcome to " ^ channel));
+              Lwt.return state
+            | None ->
+              AsigState.send_to_irc state (Irc.Reply.Topic (channel, "could not establish connection"));
+              Lwt.return state
+          end
         | None ->
           AsigState.send_to_irc state (Irc.Reply.Topic (channel, "no such channel"));
           Lwt.return state

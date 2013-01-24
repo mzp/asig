@@ -26,17 +26,19 @@ HOW TO INSTALL
 HOW TO RUN
 ------------------------------
 
-1. Run on terminal:
+Run on terminal:
 
     $ ./asig
 
-2. Connect with your favorite IRC client:
+Connect with your favorite IRC client:
 
-| nick     | <your name> |
-| realname | entry=http://asakusa-satellite.example.org api_key=<your api key>|
-| charset  | UTF-8       |
+<table>
+<tr><td>nick</td><td>your name</td></tr>
+<tr><td>realname</td><td>entry=http://asakusa-satellite.example.org api_key=your_api_key</td></tr>
+<tr><td>charset</td><td>UTF-8</td></tr>
+</table>
 
-3. Join to your room with following style:
+Join to your room with following style:
 
  * #nickname (e.g. #nick)
  * #room_id (e.g. #4e3600462620a454d9000bf2)

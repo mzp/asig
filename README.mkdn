@@ -15,22 +15,31 @@ LIMITATION
 ------------------------------
 
  * only supports Keima mode. see [websocket setting manual](http://docs.asakusa-satellite.org/en/latest/websocket.html)
- * only supports single room/single user
- * tested on OS X/Ubuntu, not Windows
+ * tested on OS X, not Windows
 
 HOW TO INSTALL
 ------------------------------
 
-see INSTALL.txt
+    $ ./opam.sh
+    $ make
 
 HOW TO RUN
 ------------------------------
 
-    asig <your api key> <keima entry point> <room id>
+1. Run on terminal:
 
-For example:
+    $ ./asig
 
-    asig DeyH10Fxxxxxxxxxx 'http://keima.example.com/socket.io/1/?app=604a12adz3d38cxxxxxxx' '7z3615xxxxx'
+2. Connect with your favorite IRC client:
+
+| nick     | <your name> |
+| realname | entry=http://asakusa-satellite.example.org api_key=<your api key>|
+| charset  | UTF-8       |
+
+3. Join to your room with following style:
+
+ * #nickname (e.g. #nick)
+ * #room_id (e.g. #4e3600462620a454d9000bf2)
 
 Authors
 -----------------------------

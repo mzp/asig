@@ -1,6 +1,5 @@
 open Asig
 open Base
-open AsakusaSatellite
 open Lwt
 
 module As = AsakusaSatellite.Make(Http.Default)
@@ -28,15 +27,15 @@ end
 module AsigState = struct
   type t = {
     nick : string;
-    api  : AsakusaSatellite.t option;
-    asakusa_satellite : Asig.AsakusaSatellite.message option -> unit;
+    api  : As.Api.t option;
+    asakusa_satellite : As.Message.t option -> unit;
     irc : (string * Asig.Irc.Reply.t) option -> unit
   }
 
   let send_to_as { api ; _ } channel message =
     match api with
       | Some api ->
-        As.post channel message api
+        As.Message.post channel message api
       | None ->
         Lwt.return (`Error "AsakusaSatellite module is not initialized")
 
@@ -64,15 +63,15 @@ module IrcAction = struct
     let open Params in
     assoc "api_key" params >>= (fun api_key ->
       assoc "entry" params >>= (fun entry ->
-        return @@ As.init ~api_key entry))
+        return @@ As.Api.init ~api_key entry))
 
   let find_room { AsigState.api; _ } id =
     match api with
       | Some api ->
-        As.rooms api
+        As.Room.list api
         >>= (function
           | `Ok rooms -> Lwt.return @@ BatList.Exceptionless.find
-              (fun { nickname; room_id; _ } -> Some id = nickname || id = room_id)
+              (fun { As.Room.nickname; id = room_id; _ } -> Some id = nickname || id = room_id)
             rooms
           | `Error _  -> Lwt.return None)
       | None ->
@@ -81,9 +80,10 @@ module IrcAction = struct
   let pusher_url { AsigState.api; _ } =
     match api with
       | Some api ->
-        As.info api
+        As.Service.info api
         >>= (function
-          | `Ok { Info.message_pusher = { MessagePusher.param = { MessagePusher.Param.url; key }; _ }; _ } ->
+          | `Ok { As.Service.message_pusher =
+              { As.MessagePusher.param = { As.MessagePusher.Param.url; key }; _ }; _ } ->
             Lwt.return @@ Some (Uri.of_string @@ Printf.sprintf "%s/socket.io/1/?app=%s" url key)
           | `Error _  -> Lwt.return None)
       | None ->
@@ -94,7 +94,7 @@ module IrcAction = struct
 
   let on_command state = function
     | Irc.Command.PrivMsg (_, channel, message) ->
-      AsigState.send_to_as state (channel_name channel) message
+      AsigState.send_to_as state (As.Room.make @@ channel_name channel) message
       >>= (fun _ -> Lwt.return state)
     | Irc.Command.User (_, _, _, realname) ->
       Lwt.return { state with
@@ -112,7 +112,7 @@ module IrcAction = struct
           pusher_url state >>= begin function
             | Some uri ->
               let _ =
-                As.on_message uri room ~f:(AsigState.recv_from_as state)
+                As.Event.on_message uri room ~f:(AsigState.recv_from_as state)
               in
               AsigState.send_to_irc state (Irc.Reply.Join channel);
               AsigState.send_to_irc state (Irc.Reply.Topic (channel, "Welcome to " ^ channel));
@@ -129,14 +129,14 @@ end
 module AsAction = struct
   let cleanup str =
     Str.global_replace (Str.regexp "[\r\n]") " " str
-  let on_command state { screen_name; body; room = { nickname; room_id; _ }; _ } =
+  let on_command state { As.Message.screen_name; body; room = { As.Room.nickname; id; _ }; _ } =
     let body =
       cleanup body
     in
     let channel =
       match nickname with
         | Some name -> name
-        | None      -> room_id
+        | None      -> id
     in
     AsigState.send_to_irc state @@
       if AsigState.is_me state screen_name then

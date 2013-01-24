@@ -43,38 +43,38 @@ module As = Asig.AsakusaSatellite.Make(Stub)
 open As
 
 let api =
-  As.init "http://example.com/"
+  Api.init "http://example.com/"
 
 let auth_api =
-  As.init ~api_key:"hoge" "http://example.com/"
+  Api.init ~api_key:"hoge" "http://example.com/"
 
 let tests = "AsakusaSatellite" >::: [
   "rooms" >:: begin fun () ->
     with_stub
       ~url:"http://example.com//api/v1/room/list.json"
       ~response:"[{\"id\":\"123\", \"name\" : \"foo\", \"nickname\" : \"nick\" }]" begin fun () ->
-        assert_success [ { room_id = "123"; room_name = "foo"; nickname = Some "nick" }] @@ rooms api
+        assert_success [ { Room.id = "123"; name = "foo"; nickname = Some "nick" }] @@ Room.list api
       end
   end;
   "rooms without nick" >:: begin fun () ->
     with_stub
       ~url:"http://example.com//api/v1/room/list.json"
       ~response:"[{\"id\":\"123\", \"name\" : \"foo\", \"nickname\" : null }]" begin fun () ->
-        assert_success [ { room_id = "123"; room_name = "foo"; nickname = None }] @@ rooms api
+        assert_success [ { Room.id = "123"; name = "foo"; nickname = None }] @@ Room.list api
       end
   end;
   "invalid room json" >:: begin fun () ->
     with_stub
       ~url:"http://example.com//api/v1/room/list.json"
       ~response:"[{}]" begin fun () ->
-        assert_error @@ rooms api
+        assert_error @@ Room.list api
       end
   end;
   "private rooms" >:: begin fun () ->
     with_stub
       ~url:"http://example.com//api/v1/room/list.json?api_key=hoge"
       ~response:"[]" begin fun () ->
-        assert_success [] @@ rooms auth_api;
+        assert_success [] @@ Room.list auth_api;
       end
   end;
   "message list" >:: begin fun () ->
@@ -82,16 +82,16 @@ let tests = "AsakusaSatellite" >::: [
       ~url:"http://example.com//api/v1/message/list.json?room_id=room_id"
       ~response:"[{ \"id\" : \"123\", \"body\":\"foo\", \"name\" : \"alice\", \"screen_name\" : \"Alice\", \"room\" : { \"id\" : \"123\", \"name\" : \"room\", \"nickname\": null }}]" begin fun () ->
         assert_success [{
-          message_id = "123";
+          Message.id = "123";
           body       = "foo";
           name       = "alice";
           screen_name = "Alice";
           room = {
-            room_id = "123";
-            room_name = "room";
+            Room.id = "123";
+            name = "room";
             nickname = None
           }
-        }] @@ messages "room_id" api
+        }] @@ Message.list (Room.make "room_id") api
       end
   end;
   "message post" >:: begin fun () ->
@@ -103,7 +103,7 @@ let tests = "AsakusaSatellite" >::: [
         "message", "hi";
         "api_key", "hoge"
       ] begin fun () ->
-        assert_success () @@ post "room_id" "hi" auth_api
+        assert_success () @@ Message.post (Room.make "room_id") "hi" auth_api
       end
   end;
   "info" >:: begin fun () ->
@@ -113,14 +113,14 @@ let tests = "AsakusaSatellite" >::: [
       ~params:[]
       begin fun () ->
         assert_success {
-          Info.message_pusher = {
+          Service.message_pusher = {
             MessagePusher.name = "keima";
             param = {
               MessagePusher.Param.url = "url";
               key = "key"
             }
           }
-        } @@ info auth_api
+        } @@ Service.info auth_api
       end;
   end
 ]

@@ -46,7 +46,7 @@ module Message = struct
     else
       let (x, xs) =
         try
-          BatString.split str " "
+          BatString.split str ~by:" "
         with Not_found ->
           str, ""
       in

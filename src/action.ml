@@ -11,8 +11,8 @@ module Params = struct
   type t = (string * string) list
 
   let from_string s : t =
-    BatString.nsplit s " "
-    +> List.map (flip  BatString.split "=")
+    BatString.nsplit s ~by:" "
+    +> List.map (BatString.split ~by:"=")
 
   let assoc =
     BatList.Exceptionless.assoc

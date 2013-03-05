@@ -28,11 +28,11 @@ let response = function
     else
       Lwt.return (`Error (Cohttp.Code.string_of_status status))
 
-let split3 s sep =
+let split3 s by =
   let (a,b) =
-    BatString.split s sep in
+    BatString.split s ~by in
   let (b,c) =
-    BatString.split b sep in
+    BatString.split b ~by in
   (a,b,c)
 
 module Default = struct
@@ -55,7 +55,7 @@ module Default = struct
     let rec write_fun () =
       Lwt_stream.next stream
       >>= fun { WebSocket.content; _ } -> begin
-        match BatString.split content ":" with
+        match BatString.split content ~by:":" with
           | ("5", content) ->
             let (_,_,json) =
               split3 content ":"
@@ -77,7 +77,7 @@ module Default = struct
     (* connect to entry point *)
     get uri
     (* get sid from response *)
-    +> ElMonad.lift (fun s -> match BatString.nsplit s ":" with
+    +> ElMonad.lift (fun s -> match BatString.nsplit s ~by:":" with
       | sid :: heartbeat :: _ -> `Ok (sid, heartbeat)
       | _ -> `Error "socket io handshake error")
     (* create url for websocket *)

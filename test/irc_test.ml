@@ -2,7 +2,7 @@ open OUnit
 open Asig.Base
 open Asig.Irc
 
-let assert_eq = assert_equal ~printer:BatStd.dump
+let assert_eq = assert_equal ~printer:BatPervasives.dump
 
 let tests = "Irc" >::: [
   "message" >::: [

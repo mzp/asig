@@ -14,6 +14,7 @@ module Command : sig
     | User    of string * string * string * string
     | Nick    of string
     | Join    of string
+    | Ping    of string
 
   val from_message : Message.t -> t option
 end
@@ -27,6 +28,7 @@ module Reply : sig
     | Topic   of string * string
     | PrivMsg of string * string * string
     | Join    of string
+    | Pong    of string
 
   val to_message : string -> t -> Message.t
 end

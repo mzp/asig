@@ -77,6 +77,7 @@ module Command = struct
     | User    of string * string * string * string
     | Nick    of string
     | Join    of string
+    | Ping    of string
 
   let from_message = function
     | { command = "PRIVMSG"; prefix; params = [channel; message] } ->
@@ -87,6 +88,8 @@ module Command = struct
       Some (Nick nick)
     | { command = "JOIN"   ; params = [ channel ]; _ } ->
       Some (Join channel)
+    | { command = "PING"   ; params = [ server  ]; _ } ->
+      Some (Ping server)
     | _ ->
       None
 end
@@ -102,6 +105,7 @@ module Reply = struct
     | Topic   of string * string
     | PrivMsg of string * string * string
     | Join    of string
+    | Pong    of string
 
   (* numeric reply needs some prefix *)
   let prefix =
@@ -159,6 +163,13 @@ module Reply = struct
         command = "JOIN";
         params = [
           channel
+        ] }
+    | Pong server ->
+      {
+        prefix;
+        command = "PONG";
+        params = [
+          server
         ] }
 end
 

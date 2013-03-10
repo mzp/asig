@@ -105,6 +105,9 @@ module IrcAction = struct
       in
       List.iter (AsigState.send_to_irc state) @@ welcome nick;
       Lwt.return state
+    | Irc.Command.Ping server ->
+      AsigState.send_to_irc state (Irc.Reply.Pong server);
+      Lwt.return state
     | Irc.Command.Join channel ->
       find_room state (channel_name channel)
       >>= function

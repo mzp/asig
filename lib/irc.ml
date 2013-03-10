@@ -146,7 +146,7 @@ module Reply = struct
         ] }
     | Topic (channel, topic) ->
       {
-        prefix = None;
+        prefix;
         command = "TOPIC";
         params = [ channel; topic ] }
     | PrivMsg (user, channel, message) ->

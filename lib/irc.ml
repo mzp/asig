@@ -103,10 +103,14 @@ module Reply = struct
     | PrivMsg of string * string * string
     | Join    of string
 
+  (* numeric reply needs some prefix *)
+  let prefix =
+    Some "asig"
+
   let to_message nick = function
     | Welcome (user, host) ->
       {
-        prefix = None;
+        prefix;
         command = "001";
         params = [
           nick;
@@ -114,7 +118,7 @@ module Reply = struct
         ] }
     | YourHost ->
       {
-        prefix = None;
+        prefix;
         command = "002";
         params = [
           nick;
@@ -122,7 +126,7 @@ module Reply = struct
         ] }
     | Created ->
       {
-        prefix = None;
+        prefix;
         command = "003";
         params = [
           nick;
@@ -130,7 +134,7 @@ module Reply = struct
         ] }
     | MyInfo (user, channel) ->
       {
-        prefix = None;
+        prefix;
         command = "004";
         params = [
           nick;

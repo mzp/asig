@@ -2,7 +2,7 @@ open Tiny_json.Json
 
 let rec string_of_json = function
   | String s -> "\"" ^s^ "\""
-  | Number x -> Printf.sprintf "%f" x
+  | Number x -> Printf.sprintf "%s" x
   | Object fs ->
     "{"
     ^String.concat "," (List.map (fun (k,v) -> "\"" ^k ^ "\" :" ^ string_of_json v) fs)

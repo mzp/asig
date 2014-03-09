@@ -1,6 +1,5 @@
 open Asig
 open Base
-open Lwt
 
 module As = AsakusaSatellite.Make(Http.Default)
 
@@ -68,6 +67,7 @@ module IrcAction = struct
   let find_room { AsigState.api; _ } id =
     match api with
       | Some api ->
+        let open Lwt in
         As.Room.list api
         >>= (function
           | `Ok rooms -> Lwt.return @@ BatList.Exceptionless.find
@@ -80,6 +80,7 @@ module IrcAction = struct
   let pusher_url { AsigState.api; _ } =
     match api with
       | Some api ->
+        let open Lwt in
         As.Service.info api
         >>= (function
           | `Ok { As.Service.message_pusher =
@@ -92,41 +93,43 @@ module IrcAction = struct
   let channel_name =
     BatString.lchop
 
-  let on_command state = function
+  let on_command (state' : AsigState.t) : Irc.Command.t -> AsigState.t Lwt.t  = function
     | Irc.Command.PrivMsg (_, channel, message) ->
-      AsigState.send_to_as state (As.Room.make @@ channel_name channel) message
-      >>= (fun _ -> Lwt.return state)
+      let open Lwt in
+      AsigState.send_to_as state' (As.Room.make @@ channel_name channel) message
+      >>= (fun _ -> Lwt.return state')
     | Irc.Command.User (_, _, _, realname) ->
-      Lwt.return { state with
+      Lwt.return { state' with
         AsigState.api = init_api @@ Params.from_string realname }
     | Irc.Command.Nick nick ->
-      let state =
-        { state with AsigState.nick }
+      let state' =
+        { state' with AsigState.nick }
       in
-      List.iter (AsigState.send_to_irc state) @@ welcome nick;
-      Lwt.return state
+      List.iter (AsigState.send_to_irc state') @@ welcome nick;
+      Lwt.return state'
     | Irc.Command.Ping server ->
-      AsigState.send_to_irc state (Irc.Reply.Pong server);
-      Lwt.return state
+      AsigState.send_to_irc state' (Irc.Reply.Pong server);
+      Lwt.return state'
     | Irc.Command.Join channel ->
-      find_room state (channel_name channel)
+      let open Lwt in
+      find_room state' (channel_name channel)
       >>= function
         | Some room ->
-          pusher_url state >>= begin function
+          pusher_url state' >>= begin function
             | Some uri ->
               let _ =
-                As.Event.on_message uri room ~f:(AsigState.recv_from_as state)
+                As.Event.on_message uri room ~f:(AsigState.recv_from_as state')
               in
-              AsigState.send_to_irc state (Irc.Reply.Join channel);
-              AsigState.send_to_irc state (Irc.Reply.Topic (channel, "Welcome to " ^ channel));
-              Lwt.return state
+              AsigState.send_to_irc state' (Irc.Reply.Join channel);
+              AsigState.send_to_irc state' (Irc.Reply.Topic (channel, "Welcome to " ^ channel));
+              Lwt.return state'
             | None ->
-              AsigState.send_to_irc state (Irc.Reply.Topic (channel, "could not establish connection"));
-              Lwt.return state
+              AsigState.send_to_irc state' (Irc.Reply.Topic (channel, "could not establish connection"));
+              Lwt.return state'
           end
         | None ->
-          AsigState.send_to_irc state (Irc.Reply.Topic (channel, "no such channel"));
-          Lwt.return state
+          AsigState.send_to_irc state' (Irc.Reply.Topic (channel, "no such channel"));
+          Lwt.return state'
 end
 
 module AsAction = struct
@@ -142,15 +145,17 @@ module AsAction = struct
         | Some name -> name
         | None      -> id
     in
-    AsigState.send_to_irc state @@
+    AsigState.send_to_irc state begin
       if AsigState.is_me state screen_name then
         Irc.Reply.Topic ("#" ^ channel, body)
       else
-        Irc.Reply.PrivMsg (screen_name, "#" ^ channel, body);
+        Irc.Reply.PrivMsg (screen_name, "#" ^ channel, body)
+    end;
     Lwt.return state
 end
 
 let peek f stream =
+  let open Lwt in
   Lwt_stream.is_empty stream >>= (fun b ->
     if b then
       Lwt.return `Empty
@@ -158,6 +163,7 @@ let peek f stream =
       Lwt_stream.next stream >>= (fun s -> Lwt.return @@ f s))
 
 let action irc command_stream  =
+  let open Lwt in
   let message_stream, asakusa_satellite =
     Lwt_stream.create ()
   in

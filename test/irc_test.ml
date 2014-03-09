@@ -63,7 +63,7 @@ let tests = "Irc" >::: [
   "reply" >:::[
     "welcome" >:: begin fun () ->
       assert_eq {
-        Message.prefix = None;
+        Message.prefix = Some "asig";
         command = "001";
         params = [ "john"; "Welcome to the Internet Relay Network john!john@localhost"]
       } @@ Reply.to_message "john" (Reply.Welcome ("john", "localhost"))

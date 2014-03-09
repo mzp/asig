@@ -23,7 +23,7 @@ let response = function
       Response.status response
     in
     if Cohttp.Code.is_success @@ Cohttp.Code.code_of_status status then
-      Body.string_of_body b
+      Cohttp_lwt_body.string_of_body b
       +> Lwt.map (fun s -> `Ok s)
     else
       Lwt.return (`Error (Cohttp.Code.string_of_status status))

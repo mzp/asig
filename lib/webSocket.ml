@@ -17,9 +17,10 @@
 
 open Lwt
 open Cohttp
-open Cohttp_lwt_unix
 
 module CK = Cryptokit
+module Req = Cohttp_lwt_unix.Request
+module Res = Cohttp_lwt_unix.Response
 
 let base64_encode str =
   let tr = CK.Base64.encode_compact_pad () in
@@ -198,18 +199,18 @@ let open_connection uri =
          "Sec-WebSocket-Protocol", "chat";
          "Sec-WebSocket-Key"     , nonce;
          "Sec-WebSocket-Version" , "13"] in
-    let req = Request.make ~headers uri in
+    let req = Req.make ~headers uri in
     lwt sockaddr = sockaddr_of_dns host (string_of_int port) in
     lwt ic, oc =
       Lwt_io.open_connection sockaddr in
     try_lwt
-      lwt () = Request.write (fun _ _ -> return ()) req oc in
-      lwt response = Response.read ic >>= function
+      lwt () = Req.write (fun _ _ -> return ()) req oc in
+      lwt response = Res.read ic >>= function
         | Some r -> return r
         | None -> raise_lwt Not_found in
-      let headers = Response.headers response in
-      (assert_lwt Response.version response = `HTTP_1_1) >>
-      (assert_lwt Response.status response = `Switching_protocols) >>
+      let headers = Res.headers response in
+      (assert_lwt Res.version response = `HTTP_1_1) >>
+      (assert_lwt Res.status response = `Switching_protocols) >>
       (assert_lwt Opt.map (fun str -> String.lowercase str)
          $ Header.get headers "upgrade" = Some "websocket") >>
       (assert_lwt Opt.map (fun str -> String.lowercase str)

@@ -1,7 +1,7 @@
 # OASIS_START
-# DO NOT EDIT (digest: 8e5b97e558327823ca4508b83f5434f0)
-# Ignore VCS directories, you can use the same kind of rule outside 
-# OASIS_START/STOP if you want to exclude directories that contains 
+# DO NOT EDIT (digest: f91c3e893fb12dbb9b8c56ba8dce86eb)
+# Ignore VCS directories, you can use the same kind of rule outside
+# OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
 <**/.svn>: -traverse
 <**/.svn>: not_hygienic
@@ -27,67 +27,67 @@
 <lib/*.ml{,i}>: oasis_library_asig_byte
 <lib/asig.{cma,cmxa}>: oasis_library_asig_native
 <lib/*.ml{,i}>: oasis_library_asig_native
-<lib/*.ml{,i}>: pkg_camlp4
-<lib/*.ml{,i}>: pkg_tiny_json_conv
-<lib/*.ml{,i}>: pkg_meta_conv.syntax
-<lib/*.ml{,i}>: pkg_cohttp.lwt
-<lib/*.ml{,i}>: pkg_lwt.unix
-<lib/*.ml{,i}>: pkg_lwt.syntax
 <lib/*.ml{,i}>: pkg_batteries
 <lib/*.ml{,i}>: pkg_bitstring
 <lib/*.ml{,i}>: pkg_bitstring.syntax
+<lib/*.ml{,i}>: pkg_camlp4
+<lib/*.ml{,i}>: pkg_cohttp.lwt
 <lib/*.ml{,i}>: pkg_cryptokit
+<lib/*.ml{,i}>: pkg_lwt.syntax
+<lib/*.ml{,i}>: pkg_lwt.unix
+<lib/*.ml{,i}>: pkg_meta_conv.syntax
+<lib/*.ml{,i}>: pkg_tiny_json_conv
 # Executable main
 <src/main.{native,byte}>: oasis_executable_main_byte
 <src/*.ml{,i}>: oasis_executable_main_byte
 <src/main.{native,byte}>: oasis_executable_main_native
 <src/*.ml{,i}>: oasis_executable_main_native
-<src/main.{native,byte}>: use_asig
-<src/main.{native,byte}>: pkg_camlp4
-<src/main.{native,byte}>: pkg_tiny_json_conv
-<src/main.{native,byte}>: pkg_meta_conv.syntax
-<src/main.{native,byte}>: pkg_cohttp.lwt
-<src/main.{native,byte}>: pkg_lwt.unix
-<src/main.{native,byte}>: pkg_lwt.syntax
 <src/main.{native,byte}>: pkg_batteries
 <src/main.{native,byte}>: pkg_bitstring
 <src/main.{native,byte}>: pkg_bitstring.syntax
+<src/main.{native,byte}>: pkg_camlp4
+<src/main.{native,byte}>: pkg_cohttp.lwt
 <src/main.{native,byte}>: pkg_cryptokit
-<src/*.ml{,i}>: use_asig
-<src/*.ml{,i}>: pkg_camlp4
-<src/*.ml{,i}>: pkg_tiny_json_conv
-<src/*.ml{,i}>: pkg_meta_conv.syntax
-<src/*.ml{,i}>: pkg_cohttp.lwt
-<src/*.ml{,i}>: pkg_lwt.unix
-<src/*.ml{,i}>: pkg_lwt.syntax
+<src/main.{native,byte}>: pkg_lwt.syntax
+<src/main.{native,byte}>: pkg_lwt.unix
+<src/main.{native,byte}>: pkg_meta_conv.syntax
+<src/main.{native,byte}>: pkg_tiny_json_conv
+<src/main.{native,byte}>: use_asig
 <src/*.ml{,i}>: pkg_batteries
 <src/*.ml{,i}>: pkg_bitstring
 <src/*.ml{,i}>: pkg_bitstring.syntax
+<src/*.ml{,i}>: pkg_camlp4
+<src/*.ml{,i}>: pkg_cohttp.lwt
 <src/*.ml{,i}>: pkg_cryptokit
+<src/*.ml{,i}>: pkg_lwt.syntax
+<src/*.ml{,i}>: pkg_lwt.unix
+<src/*.ml{,i}>: pkg_meta_conv.syntax
+<src/*.ml{,i}>: pkg_tiny_json_conv
+<src/*.ml{,i}>: use_asig
 # Executable test_exec
-<test/test.{native,byte}>: use_asig
-<test/test.{native,byte}>: pkg_oUnit
-<test/test.{native,byte}>: pkg_camlp4
-<test/test.{native,byte}>: pkg_tiny_json_conv
-<test/test.{native,byte}>: pkg_meta_conv.syntax
-<test/test.{native,byte}>: pkg_cohttp.lwt
-<test/test.{native,byte}>: pkg_lwt.unix
-<test/test.{native,byte}>: pkg_lwt.syntax
 <test/test.{native,byte}>: pkg_batteries
 <test/test.{native,byte}>: pkg_bitstring
 <test/test.{native,byte}>: pkg_bitstring.syntax
+<test/test.{native,byte}>: pkg_camlp4
+<test/test.{native,byte}>: pkg_cohttp.lwt
 <test/test.{native,byte}>: pkg_cryptokit
-<test/*.ml{,i}>: use_asig
-<test/*.ml{,i}>: pkg_oUnit
-<test/*.ml{,i}>: pkg_camlp4
-<test/*.ml{,i}>: pkg_tiny_json_conv
-<test/*.ml{,i}>: pkg_meta_conv.syntax
-<test/*.ml{,i}>: pkg_cohttp.lwt
-<test/*.ml{,i}>: pkg_lwt.unix
-<test/*.ml{,i}>: pkg_lwt.syntax
+<test/test.{native,byte}>: pkg_lwt.syntax
+<test/test.{native,byte}>: pkg_lwt.unix
+<test/test.{native,byte}>: pkg_meta_conv.syntax
+<test/test.{native,byte}>: pkg_oUnit
+<test/test.{native,byte}>: pkg_tiny_json_conv
+<test/test.{native,byte}>: use_asig
 <test/*.ml{,i}>: pkg_batteries
 <test/*.ml{,i}>: pkg_bitstring
 <test/*.ml{,i}>: pkg_bitstring.syntax
+<test/*.ml{,i}>: pkg_camlp4
+<test/*.ml{,i}>: pkg_cohttp.lwt
 <test/*.ml{,i}>: pkg_cryptokit
+<test/*.ml{,i}>: pkg_lwt.syntax
+<test/*.ml{,i}>: pkg_lwt.unix
+<test/*.ml{,i}>: pkg_meta_conv.syntax
+<test/*.ml{,i}>: pkg_oUnit
+<test/*.ml{,i}>: pkg_tiny_json_conv
+<test/*.ml{,i}>: use_asig
 # OASIS_STOP
 <lib/*.ml{,i}>: syntax_camlp4o
